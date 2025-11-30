@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Six Sigma Calc Pro | Ingeniería</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="libs/chart.js"></script>
+    <script src="libs/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <header class="no-print">
+        <div class="header-content">
+            <h1>Six Sigma Calc <span style="color:var(--accent); font-size:0.5em; vertical-align:super;">PRO</span></h1>
+            <div class="subtitle">Herramienta de Control Estadístico de Calidad</div>
+        </div>
+    </header>
+
+    <div class="print-only report-header">
+        <h1>Informe de Capacidad de Proceso</h1>
+        <hr>
+    </div>
+
+    <div class="container">
+        
+        <section class="card input-section no-print">
+            <h2>1. Especificaciones del Proceso</h2>
+            
+            <div class="mode-selector">
+                <label><input type="radio" name="specMode" value="limits" checked onchange="toggleSpecMode()"> Límites (LSL - USL)</label>
+                <label><input type="radio" name="specMode" value="tolerance" onchange="toggleSpecMode()"> Nominal ± Tolerancia</label>
+            </div>
+
+            <div class="input-grid" id="limitsInputs">
+                <div class="input-group">
+                    <label>Límite Inferior (LSL)</label>
+                    <input type="number" id="lsl" value="39.90" placeholder="Ej: 39.90">
+                </div>
+                
+                <div class="input-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label style="margin:0;">Valor Objetivo</label>
+                        <label style="font-size:0.75rem; cursor:pointer; color:var(--accent);">
+                            <input type="checkbox" id="autoTarget" onchange="toggleTarget()" checked> Auto
+                        </label>
+                    </div>
+                    <input type="number" id="target" placeholder="Auto (Calculado)" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+            
+                <div class="input-group">
+                    <label>Límite Superior (USL)</label>
+                    <input type="number" id="usl" value="40.04" placeholder="Ej: 40.04">
+                </div>
+            </div>
+
+            <div class="input-grid hidden" id="toleranceInputs">
+                <div class="input-group"><label>Nominal</label><input type="number" id="nominal" placeholder="Ej: 50"></div>
+                <div class="input-group"><label>Tolerancia (±)</label><input type="number" id="tolerance" placeholder="Ej: 5"></div>
+                <div class="input-group"><label>Rango Calculado</label><div id="calcRangeDisplay" style="color:#aaa; padding:12px; text-align:center;">-</div></div>
+            </div>
+        </section>
+
+        <section class="card input-section no-print">
+            <h2>2. Datos de la Muestra</h2>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('paste')">📌 Pegar Lista</button>
+                <button class="tab-btn" onclick="switchTab('file')">📤 Subir Archivo</button>
+                <button class="tab-btn" onclick="switchTab('sim')">🔢 Simular</button>
+                <button class="tab-btn" onclick="switchTab('manual')">✍️ Datos Manuales</button>
+            </div>
+
+            <div id="tab-paste" class="tab-content active">
+                <label>Pega tus valores aquí:</label>
+                <textarea id="dataPaste" style="height: 150px;" placeholder="39.937&#10;40.000&#10;39.978..."></textarea>
+            </div>
+
+            <div id="tab-file" class="tab-content">
+                <div class="upload-area" id="dropZone">
+                    <p>Arrastra tu archivo .csv o .txt aquí</p>
+                    <input type="file" id="fileUpload" accept=".csv, .txt">
+                </div>
+            </div>
+
+            <div id="tab-sim" class="tab-content">
+                <div class="input-grid">
+                    <div class="input-group"><label>Media (μ)</label><input type="number" id="simMean" value="39.95"></div>
+                    <div class="input-group"><label>Desv. (s)</label><input type="number" id="simStd" value="0.02"></div>
+                    <div class="input-group"><label>N</label><input type="number" id="simN" value="60"></div>
+                </div>
+                <button class="btn btn-outline" style="width:100%; margin-top:15px;" onclick="runSimulation()">Generar Datos</button>
+            </div>
+
+            <div id="tab-manual" class="tab-content">
+                <div class="alert-box">
+                    <small>ℹ️ Estás ingresando los estadísticos directos. Se calcularán los índices y la curva normal, pero no se generará histograma.</small>
+                </div>
+                <div class="input-grid">
+                    <div class="input-group"><label>Media del Proceso (x̄)</label><input type="number" id="manMean" placeholder="Ej: 50.05"></div>
+                    <div class="input-group"><label>Desviación Estándar (σ)</label><input type="number" id="manStd" placeholder="Ej: 1.25"></div>
+                    <div class="input-group"><label>Tamaño Muestra (N)</label><input type="number" id="manN" value="1" placeholder="Opcional"></div>
+                </div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid #333; margin:25px 0;">
+
+            <div class="range-config-box">
+                <label>🛠️ Configuración de Histograma</label>
+                <div style="display:flex; gap:15px; justify-content:center; align-items:center; flex-wrap:wrap; margin-top:10px;">
+                    <div class="input-group-inline">
+                        <span style="font-size:0.85rem; color:#aaa;">Nº Clases (k):</span>
+                        <input type="number" id="userClasses" placeholder="Auto" min="2" max="100" style="max-width:70px; padding:8px; text-align:center;">
+                    </div>
+                    <span style="color:var(--accent); font-weight:bold;">Ó</span>
+                    <div class="input-group-inline">
+                        <span style="font-size:0.85rem; color:#aaa;">Ancho (W):</span>
+                        <input type="number" id="userWidth" placeholder="Auto" step="0.001" style="max-width:70px; padding:8px; text-align:center;">
+                    </div>
+                </div>
+                <small style="color:#666; display:block; text-align:center; margin-top:8px; font-size:0.75rem;">(Prioridad: Si defines W, se ignora k)</small>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="calcular()">CALCULAR RESULTADOS</button>
+                <button class="btn btn-secondary" onclick="resetAll()">Reiniciar</button>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="hidden">
+            
+            <div id="captureArea" style="background-color: var(--bg-color); padding: 10px;">
+                
+                <div class="card full-width">
+                    <h2>3. Estadísticos Básicos</h2>
+                    
+                    <div class="card full-width no-print" style="margin-bottom: 20px; border: 1px dashed #444; background: rgba(0,0,0,0.2);">
+                        <details>
+                            <summary style="cursor:pointer; font-weight:bold; color:var(--accent); outline:none;">
+                                👁️ Ver / Ocultar Datos Procesados (N=<span id="dataCountDisplay">0</span>)
+                            </summary>
+                            <div id="processedDataContainer" style="margin-top:15px; max-height:150px; overflow-y:auto; font-family:monospace; font-size:0.85rem; color:#ccc; letter-spacing:0.5px; line-height:1.6; word-wrap: break-word;">
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <span class="stat-title">Media (x̄)</span>
+                            <span class="stat-math">x̄ = Σx / n</span>
+                            <span class="stat-result" id="res-media">-</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">Varianza (s²)</span>
+                            <span class="stat-math">s² = Σ(x-x̄)² / n-1</span>
+                            <span class="stat-result" id="res-var">-</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-title">Desviación (s)</span>
+                            <span class="stat-math">s = √s²</span>
+                            <span class="stat-result" id="res-sigma">-</span>
+                        </div>
+                    </div>
+
+                    <div class="conformity-box" style="text-align: left; background: #222; border: 1px solid #444;">
+                        <div style="margin-bottom: 8px; border-bottom: 1px solid #444; padding-bottom: 8px;">
+                            <span style="color:#aaa;">Rango de Datos (Min - Max):</span>
+                            <strong id="res-rango-real" style="color:#fff; float:right;">-</strong>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <span style="color:#aaa;">Intervalo Natural (±3σ):</span>
+                            <strong id="res-intervalo" style="color:#fff; float:right;">-</strong>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <span style="color:#aaa;">Conformidad:</span>
+                            <strong id="res-conformidad" style="color:#fff; float:right;">-</strong>
+                        </div>
+                        <div id="analisis-riesgo" style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 6px; font-style: italic; color: #e0e0e0; border-left: 3px solid var(--accent);">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card full-width">
+                    <h2>4. Tabla de Frecuencias</h2>
+                    <div class="table-container">
+                        <table id="freqTable">
+                            <thead><tr><th>Clase</th><th>Intervalo</th><th>Marca</th><th>Frec</th><th>Acum</th><th>Rel</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card full-width">
+                    <h2>5. Índices de Capacidad</h2>
+                    <div class="indices-grid">
+                        <div class="index-card">
+                            <div class="index-header">Cp</div>
+                            <div class="index-formula" title="(USL - LSL) / 6σ">(USL - LSL) / 6σ</div>
+                            <div class="index-value" id="res-cp">-</div>
+                            <div class="index-desc" id="desc-cp"></div>
+                        </div>
+                        <div class="index-card">
+                            <div class="index-header">Cpu</div>
+                            <div class="index-formula" title="(USL - x̄) / 3σ">(USL - x̄) / 3σ</div>
+                            <div class="index-value" id="res-cpu">-</div>
+                            <div class="index-desc" id="desc-cpu"></div>
+                        </div>
+                        <div class="index-card">
+                            <div class="index-header">Cpl</div>
+                            <div class="index-formula" title="(x̄ - LSL) / 3σ">(x̄ - LSL) / 3σ</div>
+                            <div class="index-value" id="res-cpl">-</div>
+                            <div class="index-desc" id="desc-cpl"></div>
+                        </div>
+                        <div class="index-card main-index">
+                            <div class="index-header">Cpk</div>
+                            <div class="index-formula" title="min(Cpu, Cpl)">min(Cpu, Cpl)</div>
+                            <div class="index-value" id="res-cpk">-</div>
+                            <div class="index-desc" id="desc-cpk"></div>
+                        </div>
+                        <div class="index-card">
+                            <div class="index-header">Cpm</div>
+                            <div class="index-formula" title="Taguchi Index">Indice Taguchi</div>
+                            <div class="index-value" id="res-cpm">-</div>
+                            <div class="index-desc" id="desc-cpm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid-layout">
+                    <div class="card">
+                        <h2>6.1. Histograma</h2>
+                        <div class="chart-container"><canvas id="histogramChart"></canvas></div>
+                    </div>
+                    <div class="card">
+                        <h2>6.2. Curva Normal</h2>
+                        <div class="chart-container"><canvas id="normalChart"></canvas></div>
+                    </div>
+                </div>
+            </div> <div class="export-actions no-print" style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:30px; margin-bottom:50px;">
+                <button class="btn btn-outline" style="flex:1; min-width:150px;" onclick="window.print()">📄 Imprimir PDF</button>
+                <button class="btn btn-outline" style="flex:1; min-width:150px;" onclick="downloadExcel()">📊 Descargar Excel</button>
+                <button class="btn btn-outline" style="flex:1; min-width:150px;" onclick="downloadTxt()">📝 Descargar TXT</button>
+                <button class="btn btn-outline" style="flex:1; min-width:150px;" onclick="captureScreen()">📸 Screenshot</button>
+            </div>
+        </section>
+    </div>
+<footer class="no-print">
+        <p>Desarrollado por: <span class="dev-names">Axel Montero, Marcelo Barraza & Matías Vera</span></p>
+        <p class="copyright">&copy; 2025 Six Sigma Calc Pro | Ingeniería</p>
+</footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
