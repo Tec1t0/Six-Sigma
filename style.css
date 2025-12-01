@@ -27,13 +27,13 @@ header {
     padding: 30px; 
     text-align: center; 
 }
-h1 { margin: 0; font-size: 2.5rem; letter-spacing: -1px; }
+h1 { margin: 0; font-size: 2.5rem; letter-spacing: -1px; text-align: center}
 .subtitle { color: var(--text-muted); margin-top: 5px; }
 
 /* LAYOUT */
 .container { width: 95%; max-width: 1300px; margin: 30px auto; flex: 1; padding: 0 15px; }
 .card { background: var(--card-bg); border-radius: var(--radius); padding: 25px; margin-bottom: 25px; border: 1px solid var(--border); }
-h2 { border-left: 4px solid var(--accent); padding-left: 15px; margin-top: 0; font-size: 1.4rem; color: #fff; }
+h2 { border-left: 4px solid var(--accent); padding-left: 15px; margin-top: 0; font-size: 1.4rem; color: #fff; text-align: center}
 
 /* INPUTS */
 .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
